@@ -3,287 +3,522 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificador Financiero Pro - Colombia</title>
+    <title>Patrimonio Pro - Planificador Financiero</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        .card { background: white; border-radius: 1.25rem; box-shadow: 0 4px 20px -5px rgba(0,0,0,0.07); transition: transform 0.2s ease; }
-        .input-field { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; padding: 0.65rem; outline: none; transition: all 0.2s; font-size: 0.875rem; }
-        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-        .nav-item { cursor: pointer; transition: all 0.2s; border-radius: 0.75rem; color: #94a3b8; border: 1px solid transparent; }
-        .nav-item:hover { background-color: rgba(255,255,255,0.05); color: #f1f5f9; }
-        .nav-active { background-color: #3b82f6 !important; color: white !important; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        @keyframes pulse-ai { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .ai-loading { animation: pulse-ai 1.5s infinite; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-        .online { background-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
-        .offline { background-color: #64748b; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f1f5f9; 
+            color: #0f172a; 
+            overflow-x: hidden;
+        }
 
-        #sidebar-nav::-webkit-scrollbar { width: 4px; }
-        #sidebar-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        /* Utilidades de Diseño UI/UX */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+        }
+
+        .input-premium { 
+            width: 100%; 
+            background: #f8fafc;
+            border: 1px solid #e2e8f0; 
+            border-radius: 0.75rem; 
+            padding: 0.75rem 1rem; 
+            outline: none; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+        }
+
+        .input-premium:focus { 
+            background: #ffffff;
+            border-color: #3b82f6; 
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); 
+        }
+
+        .nav-item { 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            border-radius: 0.75rem; 
+            color: #64748b; 
+            font-weight: 600;
+        }
+
+        .nav-item:hover { 
+            background-color: #f1f5f9; 
+            color: #0f172a; 
+            transform: translateX(4px);
+        }
+
+        .nav-active { 
+            background-color: #3b82f6 !important; 
+            color: white !important; 
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4); 
+            transform: translateX(4px);
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         
-        .btn-action { transition: all 0.2s; }
-        .btn-action:active { transform: scale(0.95); }
+        @keyframes pulse-glow { 0%, 100% { opacity: 1; text-shadow: 0 0 15px rgba(139, 92, 246, 0.5); } 50% { opacity: 0.7; text-shadow: none; } }
+        .ai-loading { animation: pulse-glow 1.5s infinite; color: #8b5cf6; }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Auth Screen Background */
+        .auth-bg {
+            background: radial-gradient(circle at top right, #dbeafe, transparent 40%),
+                        radial-gradient(circle at bottom left, #e0e7ff, transparent 40%);
+            background-color: #f8fafc;
+        }
     </style>
 </head>
-<body class="flex flex-col md:flex-row min-h-screen">
+<body class="antialiased selection:bg-blue-200 selection:text-blue-900 h-screen overflow-hidden">
 
-    <!-- Sidebar de Navegación -->
-    <aside class="w-full md:w-80 bg-slate-900 text-slate-300 flex flex-col p-6 space-y-2 sticky top-0 h-auto md:h-screen z-50 shadow-2xl">
-        <div class="mb-10 px-2">
-            <div class="flex items-center gap-4">
-                <div class="p-2.5 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-900/40">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+    <!-- ================= PANTALLA DE LOGIN / REGISTRO ================= -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] auth-bg flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="glass-panel card-shadow rounded-[2rem] p-8 md:p-12 w-full max-w-md animate-fade-in border border-white/60">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white mb-4 shadow-lg shadow-blue-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Patrimonio Pro</h1>
+                <p class="text-slate-500 mt-2 font-medium" id="auth-subtitle">Ingresa a tu bóveda financiera</p>
+            </div>
+
+            <form id="auth-form" class="space-y-5">
+                <div id="auth-error" class="hidden bg-rose-50 text-rose-600 text-sm p-3 rounded-xl border border-rose-100 font-semibold text-center"></div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Correo Electrónico</label>
+                    <input type="email" id="auth-email" required placeholder="tu@correo.com" class="input-premium">
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">Patrimonio Pro</h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span id="connection-status" class="status-dot offline"></span>
-                        <span class="text-[9px] uppercase font-black text-slate-500 tracking-widest">Nube Sincronizada</span>
-                    </div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Clave de Acceso</label>
+                    <input type="password" id="auth-pass" required placeholder="••••••••" class="input-premium">
                 </div>
+                
+                <input type="hidden" id="auth-mode" value="login">
+                
+                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-600/30 transition-all active:scale-[0.98]">
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                    ¿No tienes cuenta? Regístrate aquí
+                </button>
             </div>
         </div>
+    </div>
+
+    <!-- ================= APLICACIÓN PRINCIPAL (Oculta al inicio) ================= -->
+    <div id="main-app" class="hidden flex h-full w-full relative">
         
-        <nav id="sidebar-nav" class="flex-1 space-y-1 overflow-y-auto pr-1">
-            <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item p-3.5 flex items-center gap-3 nav-active mb-4">
-                <span class="text-xl">📊</span> Resumen Ejecutivo
+        <!-- Botón Menú Móvil -->
+        <button onclick="toggleSidebar()" class="md:hidden fixed top-4 right-4 z-[70] p-3 bg-white rounded-xl shadow-lg border border-slate-100 text-slate-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+
+        <!-- Overlay Sidebar Móvil -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-[55] hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-[280px] bg-white border-r border-slate-200 z-[60] flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 h-full card-shadow md:shadow-none">
+            
+            <div class="p-6 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl text-white shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-slate-800 tracking-tight leading-none">Patrimonio Pro</h1>
+                        <span class="text-[10px] uppercase font-bold text-emerald-500 tracking-wider flex items-center gap-1 mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado
+                        </span>
+                    </div>
+                </div>
             </div>
             
-            <div class="pt-6 pb-2 px-3 text-[10px] font-bold text-slate-600 uppercase tracking-[3px] border-t border-slate-800">Mis Hojas de Cálculo</div>
-            <div id="dynamic-nav-items" class="space-y-1">
-                <!-- Se poblará dinámicamente -->
+            <nav id="sidebar-nav" class="flex-1 overflow-y-auto p-4 space-y-1">
+                <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item p-3 flex items-center gap-3 nav-active mb-6">
+                    <span class="text-xl">📊</span> <span>Panel Principal</span>
+                </div>
+                
+                <div class="px-3 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mis Finanzas</div>
+                <div id="dynamic-nav-items" class="space-y-1">
+                    <!-- Secciones dinámicas renderizadas por JS -->
+                </div>
+
+                <button onclick="openNewCategoryModal()" class="w-full mt-4 p-3 flex items-center gap-3 text-sm text-blue-600 font-bold border-2 border-dashed border-blue-200 rounded-xl hover:bg-blue-50 transition-colors group">
+                    <span class="bg-blue-100 p-1.5 rounded-lg text-blue-600 group-hover:scale-110 transition-transform">➕</span> Añadir Hoja
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="truncate pr-2">
+                        <p class="text-xs font-bold text-slate-800 truncate" id="user-email-display">usuario@correo.com</p>
+                        <p class="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5" id="sync-status">
+                            <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            Guardado en Nube
+                        </p>
+                    </div>
+                </div>
+                <button onclick="logoutUser()" class="w-full py-2 text-xs font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Cerrar Sesión
+                </button>
             </div>
+        </aside>
 
-            <button onclick="openNewCategoryModal()" class="w-full mt-6 p-4 flex items-center gap-3 text-xs text-blue-400 hover:text-blue-300 font-bold border-2 border-dashed border-slate-800 rounded-2xl hover:bg-slate-800/50 transition-all duration-300 group">
-                <span class="bg-blue-900/30 p-1.5 rounded-lg group-hover:rotate-90 transition-transform">➕</span> Nueva Sección
-            </button>
-        </nav>
-
-        <div class="mt-auto p-4 bg-slate-800/40 rounded-2xl border border-slate-700/50">
-            <div id="user-info" class="text-[9px] text-slate-500 font-mono truncate mb-2">Conectando...</div>
-            <div class="flex items-center justify-between">
-                <span id="save-status-text" class="text-[10px] font-bold text-slate-400">Todo al día</span>
-                <span id="save-status-icon">✅</span>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Área de Contenido -->
-    <main class="flex-1 p-5 md:p-10 overflow-y-auto">
-        
-        <!-- VISTA DASHBOARD -->
-        <div id="view-dashboard" class="view-content space-y-10">
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h2 class="text-4xl font-black text-slate-800 tracking-tight">Panel Principal</h2>
-                    <p class="text-slate-500 font-medium">Análisis consolidado de tu flujo financiero en Colombia</p>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="resetData()" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm btn-action">Limpiar Ejecutado</button>
-                    <button onclick="manualSave()" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition shadow-xl shadow-slate-200 btn-action">Forzar Sincronización</button>
-                </div>
-            </header>
-
-            <!-- KPIs Principales -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="card p-6 border-t-4 border-emerald-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ingresos Reales</p>
-                    <h3 id="summary-income" class="text-2xl font-black text-slate-800 mt-2">$ 0</h3>
-                </div>
-                <div class="card p-6 border-t-4 border-rose-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gastos Reales</p>
-                    <h3 id="summary-expenses" class="text-2xl font-black text-slate-800 mt-2">$ 0</h3>
-                </div>
-                <div class="card p-6 border-t-4 border-blue-600">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saldo Ahorro</p>
-                    <h3 id="summary-balance" class="text-2xl font-black mt-2">$ 0</h3>
-                </div>
-                <div class="card p-6 border-t-4 border-amber-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">% de Ahorro</p>
-                    <h3 id="summary-percent" class="text-2xl font-black text-slate-800 mt-2">0%</h3>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div class="lg:col-span-2 space-y-10">
-                    <!-- Gráfico Barras -->
-                    <section class="card p-8">
-                        <div class="flex items-center justify-between mb-8">
-                            <h4 class="font-bold text-slate-800 text-lg">Presupuesto vs Realidad (COP)</h4>
+        <!-- Contenido Central -->
+        <main class="flex-1 overflow-y-auto bg-[#f8fafc] h-full relative" id="main-scroll-area">
+            <div class="p-5 md:p-10 max-w-7xl mx-auto pb-24">
+                
+                <!-- ================= VISTA: DASHBOARD ================= -->
+                <div id="view-dashboard" class="space-y-8">
+                    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
+                        <div>
+                            <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">Hola, buen día 👋</h2>
+                            <p class="text-slate-500 font-medium mt-1">Este es el resumen de tu patrimonio mensual.</p>
                         </div>
-                        <div class="h-[350px]"><canvas id="comparisonChart"></canvas></div>
-                    </section>
-                    
-                    <!-- IA Asistente -->
-                    <section class="card p-8 border-2 border-purple-100 bg-gradient-to-br from-white to-purple-50/40">
-                        <div class="flex items-center justify-between mb-6">
-                            <h4 class="font-bold text-slate-800 flex items-center gap-2">Asistente Gemini ✨</h4>
-                            <div class="flex gap-6">
-                                <button onclick="aiAnalyze()" class="text-xs font-bold text-purple-600 hover:text-purple-900 underline underline-offset-4 transition">Analizar Mes</button>
-                                <button onclick="aiSuggestions()" class="text-xs font-bold text-indigo-600 hover:text-indigo-900 underline underline-offset-4 transition">Tips Ahorro</button>
-                                <button onclick="aiSpeechSummary()" class="text-xs font-bold text-slate-600 hover:text-black underline underline-offset-4 transition">Oír Resumen</button>
+                        <div class="flex gap-2">
+                            <button onclick="resetMonthlyReal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition card-shadow">Limpiar Mes</button>
+                        </div>
+                    </header>
+
+                    <!-- Tarjetas de KPIs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Entradas
+                            </p>
+                            <h3 id="summary-income" class="text-2xl md:text-3xl font-black text-slate-800 mt-2">$ 0</h3>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Salidas
+                            </p>
+                            <h3 id="summary-expenses" class="text-2xl md:text-3xl font-black text-slate-800 mt-2">$ 0</h3>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 card-shadow text-white relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full -z-0"></div>
+                            <p class="text-xs font-bold text-blue-100 uppercase tracking-widest relative z-10">Saldo Neto / Ahorro</p>
+                            <h3 id="summary-balance" class="text-2xl md:text-3xl font-black mt-2 relative z-10">$ 0</h3>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow relative overflow-hidden">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Eficiencia
+                            </p>
+                            <div class="flex items-end gap-3 mt-2">
+                                <h3 id="summary-percent" class="text-2xl md:text-3xl font-black text-slate-800">0%</h3>
+                                <span class="text-sm font-semibold text-slate-400 mb-1">ahorrado</span>
                             </div>
                         </div>
-                        <div id="ai-response-box" class="hidden">
-                            <p id="ai-content" class="text-sm text-slate-700 leading-relaxed italic bg-white p-6 rounded-2xl border border-purple-100 shadow-sm whitespace-pre-wrap"></p>
-                        </div>
-                        <div id="ai-placeholder" class="text-sm text-slate-400 italic bg-white/50 p-6 rounded-2xl border border-dashed border-slate-200">Solicita un diagnóstico para que la IA procese tus datos reales...</div>
-                    </section>
-                </div>
-
-                <div class="space-y-10">
-                    <!-- Gráfico Dona -->
-                    <section class="card p-8 text-center">
-                        <h4 class="font-bold text-slate-800 mb-8 text-left">Distribución de Gastos</h4>
-                        <div class="h-[280px]"><canvas id="distributionChart"></canvas></div>
-                    </section>
-                    <!-- Alertas -->
-                    <section class="card p-8">
-                        <h4 class="font-bold text-slate-800 mb-6 text-[10px] uppercase tracking-widest text-slate-400">Estado de Alertas</h4>
-                        <div id="alerts-container" class="space-y-3"></div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
-        <!-- VISTA DE DETALLE DINÁMICO -->
-        <div id="view-details" class="view-content hidden space-y-10">
-            <header class="flex flex-col md:flex-row justify-between items-end gap-6">
-                <div>
-                    <div class="flex items-center gap-4">
-                        <h2 id="view-title" class="text-4xl font-black text-slate-800 capitalize tracking-tight">Sección</h2>
-                        <button onclick="deleteCurrentCategory()" id="btn-delete-cat" class="text-[10px] text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-200 px-3 py-1.5 rounded-lg transition font-bold uppercase">Borrar Hoja</button>
                     </div>
-                    <p id="view-subtitle" class="text-slate-500 mt-2 font-medium">Control granular de montos presupuestados y reales</p>
-                </div>
-                <button onclick="addItem()" class="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 transition flex items-center gap-2 btn-action">
-                    <span>➕</span> Nuevo Concepto
-                </button>
-            </header>
 
-            <section class="card overflow-hidden">
-                <div id="view-header-bg" class="px-8 py-6 border-b">
-                    <h3 id="table-title" class="font-bold text-white tracking-wide text-lg">Cargando datos...</h3>
-                </div>
-                <div class="p-4 overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-slate-400 text-[10px] uppercase font-bold border-b border-slate-100">
-                                <th class="pb-4 px-4">Descripción del Movimiento</th>
-                                <th class="pb-4 px-4 w-44 text-center">Presupuesto ($)</th>
-                                <th class="pb-4 px-4 w-44 text-center">Real Ejecutado ($)</th>
-                                <th class="pb-4 px-4 text-right w-44">Diferencia ($)</th>
-                                <th class="pb-4 px-4 w-12"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="details-rows" class="text-sm font-medium text-slate-700">
-                            <!-- Filas dinámicas -->
-                        </tbody>
-                        <tfoot>
-                            <tr class="bg-slate-50/80 font-bold border-t border-slate-200" id="details-footer">
-                                <!-- Totales -->
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </section>
-        </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+                        <!-- Columna Principal -->
+                        <div class="lg:col-span-2 space-y-6 md:space-y-8">
+                            
+                            <!-- Gráfico Principal -->
+                            <section class="bg-white rounded-3xl p-6 md:p-8 card-shadow border border-slate-100">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h4 class="font-bold text-slate-800 text-lg">Presupuesto vs Real</h4>
+                                    <span class="px-3 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg">COP</span>
+                                </div>
+                                <div class="h-[300px] w-full"><canvas id="comparisonChart"></canvas></div>
+                            </section>
+                            
+                            <!-- Asistente IA -->
+                            <section class="bg-gradient-to-br from-[#f8fafc] to-[#f3e8ff] rounded-3xl p-6 md:p-8 card-shadow border border-purple-100 relative overflow-hidden">
+                                <div class="absolute -top-10 -right-10 text-[100px] opacity-10 pointer-events-none">✨</div>
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 relative z-10">
+                                    <h4 class="font-extrabold text-slate-800 text-xl flex items-center gap-2">
+                                        <span class="bg-purple-100 text-purple-600 p-2 rounded-xl">🤖</span> Asistente Gemini
+                                    </h4>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button onclick="aiAnalyze()" class="px-4 py-2 bg-white text-purple-700 text-xs font-bold rounded-xl shadow-sm hover:shadow border border-purple-100 transition-all">Análisis Rápido</button>
+                                        <button onclick="aiSuggestions()" class="px-4 py-2 bg-white text-indigo-700 text-xs font-bold rounded-xl shadow-sm hover:shadow border border-indigo-100 transition-all">Tips de Ahorro</button>
+                                        <button onclick="aiSpeechSummary()" class="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm hover:bg-slate-700 transition-all flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg> Audio
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="ai-response-box" class="relative z-10 transition-all duration-300 hidden">
+                                    <div class="bg-white/80 backdrop-blur-md p-5 rounded-2xl border border-white/50 shadow-sm">
+                                        <p id="ai-content" class="text-sm text-slate-700 font-medium leading-relaxed whitespace-pre-wrap"></p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
 
-    </main>
+                        <!-- Columna Lateral -->
+                        <div class="space-y-6 md:space-y-8">
+                            <section class="bg-white rounded-3xl p-6 md:p-8 card-shadow border border-slate-100">
+                                <h4 class="font-bold text-slate-800 mb-6">Distribución de Gastos</h4>
+                                <div class="h-[240px] w-full flex justify-center"><canvas id="distributionChart"></canvas></div>
+                            </section>
 
-    <!-- Modal: Nueva Categoría -->
-    <div id="modal-new-cat" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] hidden p-6">
-        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl">
-            <h3 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">Nueva Hoja</h3>
-            <p class="text-slate-400 text-sm mb-8 font-medium">Define una nueva sección para tu planificador.</p>
-            <div class="space-y-6">
+                            <section class="bg-white rounded-3xl p-6 md:p-8 card-shadow border border-slate-100">
+                                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                    Alertas del Mes
+                                </h4>
+                                <div id="alerts-container" class="space-y-3">
+                                    <!-- JS renderiza alertas -->
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: DETALLE DE CATEGORÍA ================= -->
+                <div id="view-details" class="hidden space-y-8">
+                    <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-4">
+                                <h2 id="view-title" class="text-3xl md:text-4xl font-extrabold text-slate-800 capitalize tracking-tight flex items-center gap-3">
+                                    <span id="view-icon" class="text-4xl drop-shadow-sm"></span>
+                                    <span id="view-title-text">Sección</span>
+                                </h2>
+                            </div>
+                            <p id="view-subtitle" class="text-slate-500 font-medium mt-2">Control detallado de cuentas</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="deleteCurrentCategory()" id="btn-delete-cat" class="px-4 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition border border-rose-100 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg> Borrar Hoja
+                            </button>
+                            <button onclick="addItem()" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition flex items-center gap-2">
+                                ➕ Fila
+                            </button>
+                        </div>
+                    </header>
+
+                    <section class="bg-white rounded-3xl card-shadow border border-slate-100 overflow-hidden">
+                        <!-- Cabecera Tabla -->
+                        <div id="view-header-bg" class="px-6 md:px-8 py-5 border-b bg-slate-50 flex items-center justify-between">
+                            <h3 class="font-extrabold text-slate-700 tracking-wide text-sm uppercase">Detalle de Conceptos</h3>
+                        </div>
+                        
+                        <!-- Contenedor Tabla Responsive -->
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-left min-w-[800px]">
+                                <thead>
+                                    <tr class="bg-white border-b border-slate-100">
+                                        <th class="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider">Descripción del Movimiento</th>
+                                        <th class="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right w-48">Presupuesto ($)</th>
+                                        <th class="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right w-48">Real ($)</th>
+                                        <th class="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right w-40">Desvío</th>
+                                        <th class="py-4 px-6 w-16"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="details-rows" class="divide-y divide-slate-50">
+                                    <!-- Renderizado por JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-50/50" id="details-footer">
+                                        <!-- Totales -->
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODALES Y TOASTS ================= -->
+    
+    <!-- Modal: Nueva Sección -->
+    <div id="modal-new-cat" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] hidden p-4 transition-opacity">
+        <div class="bg-white rounded-3xl p-8 w-full max-w-md card-shadow animate-fade-in border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-extrabold text-slate-800 tracking-tight">Crear Hoja</h3>
+                <button onclick="closeNewCategoryModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></button>
+            </div>
+            
+            <div class="space-y-5">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block tracking-widest">Nombre personalizado</label>
-                    <input type="text" id="new-cat-name" placeholder="Ej: Viajes, Mascota, Inversiones..." class="input-field py-4 text-lg font-semibold">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Nombre de la categoría</label>
+                    <input type="text" id="new-cat-name" placeholder="Ej: Viajes, Mascota, Seguros..." class="input-premium">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block tracking-widest">Tipo de flujo</label>
-                    <select id="new-cat-type" class="input-field py-4 cursor-pointer font-semibold bg-slate-50">
-                        <option value="expense">📉 GASTO (Salida de dinero)</option>
-                        <option value="income">💰 INGRESO (Entrada de dinero)</option>
-                    </select>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Tipo de Naturaleza</label>
+                    <div class="relative">
+                        <select id="new-cat-type" class="input-premium appearance-none cursor-pointer pr-10">
+                            <option value="expense">📉 Gasto (Salida de dinero)</option>
+                            <option value="income">💰 Ingreso (Entrada de dinero)</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex gap-4 pt-4">
-                    <button onclick="closeNewCategoryModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition">Cancelar</button>
-                    <button onclick="createNewCategory()" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition">Crear Hoja</button>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Icono (Emoji)</label>
+                    <input type="text" id="new-cat-icon" placeholder="Ej: ✈️" maxlength="2" class="input-premium text-center text-xl">
+                </div>
+                <div class="pt-4">
+                    <button onclick="createNewCategory()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">Añadir a mi menú</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-semibold text-sm shadow-xl flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-10 z-[200] pointer-events-none">
+        <span id="toast-icon">✅</span> <span id="toast-msg">Guardado</span>
+    </div>
+
+    <!-- ================= SCRIPTS ================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURACIÓN DE APIS
+        // CONFIGURACIÓN FIREBASE & API
         const apiKey = ""; 
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // INICIALIZACIÓN FIREBASE
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // ESTADO DE LA APLICACIÓN (Estructura Dinámica)
+        // ESTADO GLOBAL DE LA APP
         let state = {
             currentView: 'dashboard',
             categories: [
-                { id: 'ingresos', name: 'Ingresos', icon: '💰', type: 'income', color: 'bg-emerald-600', sub: 'Salarios y rentas' },
-                { id: 'hogar', name: 'Gastos Hogar', icon: '🏠', type: 'expense', color: 'bg-indigo-600', sub: 'Servicios y administración' },
-                { id: 'financieras', name: 'Obligaciones', icon: '💳', type: 'expense', color: 'bg-rose-600', sub: 'Deudas y préstamos' },
-                { id: 'salud', name: 'Salud', icon: '🏥', type: 'expense', color: 'bg-cyan-600', sub: 'Bienestar y farmacia' },
-                { id: 'ocio', name: 'Otros / Ocio', icon: '🍔', type: 'expense', color: 'bg-pink-600', sub: 'Varios y diversión' }
+                { id: 'ingresos', name: 'Ingresos', icon: '💰', type: 'income' },
+                { id: 'hogar', name: 'Gastos Hogar', icon: '🏠', type: 'expense' },
+                { id: 'financieras', name: 'Obligaciones', icon: '💳', type: 'expense' },
+                { id: 'salud', name: 'Salud', icon: '🏥', type: 'expense' },
+                { id: 'ocio', name: 'Ocio y Varios', icon: '🍔', type: 'expense' }
             ],
             data: {
                 ingresos: [{ id: 'i1', name: 'Sueldo Principal', budget: 5000000, real: 0 }],
-                hogar: [{ id: 'h1', name: 'Administración', budget: 450000, real: 0 }],
-                financieras: [{ id: 'f1', name: 'Cuota Crédito', budget: 1000000, real: 0 }],
-                salud: [{ id: 's1', name: 'E P S / Medicina', budget: 150000, real: 0 }],
+                hogar: [{ id: 'h1', name: 'Arriendo / Hipoteca', budget: 1500000, real: 0 }],
+                financieras: [{ id: 'f1', name: 'Tarjetas de crédito', budget: 300000, real: 0 }],
+                salud: [{ id: 's1', name: 'EPS / Prepaga', budget: 150000, real: 0 }],
                 ocio: [{ id: 'o1', name: 'Mercado', budget: 800000, real: 0 }]
             }
         };
 
         let currentUser = null;
         let saveTimeout;
+        let unsubscribeData = null;
         let comparisonChart, distributionChart;
 
-        // --- AUTENTICACIÓN Y PERSISTENCIA (FIRESTORE) ---
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-
+        // --- SISTEMA DE AUTENTICACIÓN (LOGIN/REGISTRO) ---
+        
+        // Listener de estado de sesión
         onAuthStateChanged(auth, (user) => {
+            const authScreen = document.getElementById('auth-screen');
+            const mainApp = document.getElementById('main-app');
+            
             if (user) {
                 currentUser = user;
-                document.getElementById('connection-status').classList.replace('offline', 'online');
-                document.getElementById('user-info').innerText = `CONEXIÓN ID: ${user.uid.substring(0,18)}`;
+                authScreen.classList.add('opacity-0');
+                setTimeout(() => {
+                    authScreen.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    // Trigger render for charts
+                    window.dispatchEvent(new Event('resize')); 
+                }, 500);
+                
+                document.getElementById('user-email-display').innerText = user.email;
                 subscribeToData(user.uid);
+            } else {
+                currentUser = null;
+                if(unsubscribeData) { unsubscribeData(); unsubscribeData = null; }
+                mainApp.classList.add('hidden');
+                authScreen.classList.remove('hidden');
+                // Pequeno delay para animacion de entrada
+                setTimeout(() => authScreen.classList.remove('opacity-0'), 50);
             }
         });
 
+        // Toggle entre Login y Registro UI
+        window.toggleAuthMode = () => {
+            const modeInput = document.getElementById('auth-mode');
+            const btn = document.getElementById('auth-submit-btn');
+            const toggleBtn = document.getElementById('auth-toggle-btn');
+            const sub = document.getElementById('auth-subtitle');
+            
+            if (modeInput.value === 'login') {
+                modeInput.value = 'register';
+                btn.innerText = 'Crear Cuenta Segura';
+                toggleBtn.innerText = '¿Ya tienes cuenta? Inicia sesión';
+                sub.innerText = 'Regístrate para proteger tus datos financieros';
+            } else {
+                modeInput.value = 'login';
+                btn.innerText = 'Iniciar Sesión';
+                toggleBtn.innerText = '¿No tienes cuenta? Regístrate aquí';
+                sub.innerText = 'Ingresa a tu bóveda financiera';
+            }
+            document.getElementById('auth-error').classList.add('hidden');
+        };
+
+        // Manejo del formulario de Auth
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const mode = document.getElementById('auth-mode').value;
+            const btn = document.getElementById('auth-submit-btn');
+            const errBox = document.getElementById('auth-error');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-pulse">Procesando...</span>';
+            errBox.classList.add('hidden');
+
+            try {
+                if (mode === 'login') {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (error) {
+                let msg = "Error al autenticar.";
+                if(error.code === 'auth/invalid-credential') msg = "Credenciales incorrectas.";
+                if(error.code === 'auth/email-already-in-use') msg = "El correo ya está registrado.";
+                if(error.code === 'auth/weak-password') msg = "La clave debe tener al menos 6 caracteres.";
+                
+                errBox.innerText = msg;
+                errBox.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerText = mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta Segura';
+            }
+        });
+
+        window.logoutUser = () => signOut(auth);
+
+        // --- BASE DE DATOS FIRESTORE ---
         const subscribeToData = (userId) => {
-            // Regla de ruta Firestore (RULE 1): /artifacts/{appId}/users/{userId}/{collectionName}
-            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'proPlanConfig', 'current');
-            onSnapshot(docRef, (docSnap) => {
+            // Regla estricta de ruta
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'patrimonioData', 'v1');
+            unsubscribeData = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const cloudState = docSnap.data().state;
                     if (cloudState) {
@@ -291,85 +526,60 @@
                         render();
                     }
                 } else {
-                    saveData(); // Inicializa nube si es nuevo
+                    saveData(); // Guarda por defecto la primera vez
                 }
-            }, (err) => console.error("Fallo Sync Nube:", err));
+            }, (err) => showToast("Error al sincronizar datos", "❌"));
         };
 
         const saveData = async () => {
             if (!currentUser) return;
-            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'proPlanConfig', 'current');
-            setSaveStatus('saving');
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'patrimonioData', 'v1');
+            updateSyncStatus('Guardando...', 'sync');
             try {
                 await setDoc(docRef, { state, lastUpdated: new Date().toISOString() });
-                setSaveStatus('saved');
+                updateSyncStatus('Guardado en Nube', 'success');
             } catch (e) { 
-                console.error("Error Guardado:", e);
-                setSaveStatus('error'); 
+                updateSyncStatus('Error de conexión', 'error');
             }
         };
 
         const autoSave = () => {
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveData, 2000);
+            updateSyncStatus('Esperando...', 'sync');
+            saveTimeout = setTimeout(saveData, 1500);
         };
 
-        const setSaveStatus = (status) => {
-            const btnText = document.getElementById('save-status-text');
-            const btnIcon = document.getElementById('save-status-icon');
-            if (status === 'saving') { btnText.innerText = 'Guardando...'; btnIcon.innerText = '⏳'; }
-            else if (status === 'saved') { btnText.innerText = 'Todo al día'; btnIcon.innerText = '✅'; }
-            else { btnText.innerText = 'Falla de Nube'; btnIcon.innerText = '❌'; }
-        };
-
-        // --- GESTIÓN DE SECCIONES DINÁMICAS ---
-        window.openNewCategoryModal = () => document.getElementById('modal-new-cat').classList.remove('hidden');
-        window.closeNewCategoryModal = () => document.getElementById('modal-new-cat').classList.add('hidden');
-
-        window.createNewCategory = () => {
-            const nameInp = document.getElementById('new-cat-name');
-            const typeSel = document.getElementById('new-cat-type');
-            if (!nameInp.value) return;
-            
-            const id = 'sec_' + Date.now();
-            const colors = ['bg-indigo-600', 'bg-purple-600', 'bg-blue-600', 'bg-cyan-600', 'bg-emerald-600', 'bg-rose-600'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            state.categories.push({ id, name: nameInp.value, icon: '📂', type: typeSel.value, color: randomColor, sub: 'Hoja personalizada' });
-            state.data[id] = [{ id: 'it_' + Date.now(), name: 'Nuevo concepto', budget: 0, real: 0 }];
-            
-            nameInp.value = '';
-            closeNewCategoryModal();
-            switchView(id);
-            autoSave();
-        };
-
-        window.deleteCurrentCategory = () => {
-            const catId = state.currentView;
-            if (catId === 'dashboard' || catId === 'ingresos') return;
-            if (confirm(`¿Eliminar permanentemente la sección "${state.categories.find(c=>c.id === catId).name}"?`)) {
-                state.categories = state.categories.filter(c => c.id !== catId);
-                delete state.data[catId];
-                switchView('dashboard');
-                autoSave();
+        const updateSyncStatus = (text, mode) => {
+            const el = document.getElementById('sync-status');
+            if(mode === 'success') {
+                el.innerHTML = `<svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ${text}`;
+            } else if (mode === 'sync') {
+                el.innerHTML = `<svg class="w-3 h-3 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> ${text}`;
+            } else {
+                el.innerHTML = `<svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> ${text}`;
             }
         };
 
-        window.addItem = () => {
-            const catId = state.currentView;
-            if (!state.data[catId]) state.data[catId] = [];
-            state.data[catId].push({ id: 'it_' + Date.now(), name: '', budget: 0, real: 0 });
-            render();
-            autoSave();
+        window.showToast = (msg, icon = "✅") => {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon;
+            t.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-10'), 3000);
         };
 
-        window.removeItem = (catId, itemId) => {
-            state.data[catId] = state.data[catId].filter(i => i.id !== itemId);
-            render();
-            autoSave();
+        window.manualSave = () => {
+            saveData().then(() => showToast("Datos sincronizados manualmente"));
         };
 
-        // --- LÓGICA DE INTERFAZ ---
+        // --- UI & NAVEGACIÓN ---
+        window.toggleSidebar = () => {
+            const sb = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sb.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+
         window.switchView = (viewName) => {
             state.currentView = viewName;
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('nav-active'));
@@ -385,18 +595,77 @@
                 const cat = state.categories.find(c => c.id === viewName);
                 if (cat) setupDetailsView(cat);
             }
+            
+            // Cerrar sidebar en movil si se hizo click
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+
+            document.getElementById('main-scroll-area').scrollTo(0,0);
             render();
         };
 
         const setupDetailsView = (cat) => {
-            document.getElementById('view-title').innerText = cat.name;
-            document.getElementById('view-subtitle').innerText = cat.sub;
-            document.getElementById('view-header-bg').className = `px-8 py-6 border-b ${cat.color}`;
-            document.getElementById('table-title').innerText = `Gestión: ${cat.name}`;
-            document.getElementById('btn-delete-cat').style.display = (cat.id === 'ingresos' ? 'none' : 'block');
+            document.getElementById('view-title-text').innerText = cat.name;
+            document.getElementById('view-icon').innerText = cat.icon;
+            document.getElementById('btn-delete-cat').style.display = (cat.id === 'ingresos' ? 'none' : 'flex');
         };
 
-        window.formatCurrency = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+        // --- GESTIÓN DE CATEGORÍAS E ITEMS ---
+        window.openNewCategoryModal = () => document.getElementById('modal-new-cat').classList.remove('hidden');
+        window.closeNewCategoryModal = () => document.getElementById('modal-new-cat').classList.add('hidden');
+
+        window.createNewCategory = () => {
+            const nameInput = document.getElementById('new-cat-name');
+            const typeSelect = document.getElementById('new-cat-type');
+            const iconInput = document.getElementById('new-cat-icon');
+            
+            if (!nameInput.value) return showToast("Debes ingresar un nombre", "⚠️");
+            
+            const id = 'sec_' + Date.now();
+            const icon = iconInput.value || '📁';
+            
+            state.categories.push({ id, name: nameInput.value, icon, type: typeSelect.value });
+            state.data[id] = [{ id: 'it_' + Date.now(), name: '', budget: 0, real: 0 }];
+            
+            nameInput.value = ''; iconInput.value = '';
+            closeNewCategoryModal();
+            switchView(id);
+            autoSave();
+            showToast("Nueva hoja creada");
+        };
+
+        window.deleteCurrentCategory = () => {
+            const catId = state.currentView;
+            if (catId === 'dashboard' || catId === 'ingresos') return;
+            if (confirm(`¿Estás seguro de eliminar "${state.categories.find(c=>c.id === catId).name}" permanentemente?`)) {
+                state.categories = state.categories.filter(c => c.id !== catId);
+                delete state.data[catId];
+                switchView('dashboard');
+                autoSave();
+                showToast("Hoja eliminada", "🗑️");
+            }
+        };
+
+        window.addItem = () => {
+            const catId = state.currentView;
+            if (!state.data[catId]) state.data[catId] = [];
+            state.data[catId].push({ id: 'it_' + Date.now(), name: '', budget: 0, real: 0 });
+            render();
+            autoSave();
+            // Scroll to bottom
+            setTimeout(() => {
+                const scrollArea = document.getElementById('main-scroll-area');
+                scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+            }, 50);
+        };
+
+        window.removeItem = (catId, itemId) => {
+            state.data[catId] = state.data[catId].filter(i => i.id !== itemId);
+            render();
+            autoSave();
+        };
 
         window.updateField = (catId, itemId, field, value) => {
             const items = state.data[catId];
@@ -409,16 +678,30 @@
             }
         };
 
+        window.resetMonthlyReal = () => { 
+            if(confirm("¿Estás seguro de reiniciar todos los montos reales ejecutados a $0? Esto marca el inicio de un nuevo mes.")) { 
+                Object.keys(state.data).forEach(k => state.data[k].forEach(i => i.real = 0)); 
+                render(); 
+                saveData().then(() => showToast("Mes reiniciado con éxito", "✨")); 
+            } 
+        };
+
+        // --- RENDERIZADO PRINCIPAL ---
+        const formatCurrency = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+
         window.render = () => {
-            // Render de Navegación Lateral
+            if(!currentUser) return; // Prevent render if not logged in
+
+            // Actualizar Sidebar HTML
             const navContainer = document.getElementById('dynamic-nav-items');
             navContainer.innerHTML = state.categories.map(cat => `
-                <div onclick="switchView('${cat.id}')" id="nav-${cat.id}" class="nav-item p-3.5 flex items-center gap-3 ${state.currentView === cat.id ? 'nav-active' : ''}">
-                    <span class="text-xl">${cat.icon}</span> ${cat.name}
+                <div onclick="switchView('${cat.id}')" id="nav-${cat.id}" class="nav-item p-3 flex items-center gap-3 ${state.currentView === cat.id ? 'nav-active' : ''}">
+                    <span class="text-xl leading-none">${cat.icon}</span> 
+                    <span class="truncate">${cat.name}</span>
                 </div>
             `).join('');
 
-            // Render de Tablas de Registro
+            // Actualizar Vista de Detalle (Tablas)
             if (state.currentView !== 'dashboard') {
                 const catId = state.currentView;
                 const cat = state.categories.find(c => c.id === catId);
@@ -429,21 +712,29 @@
                 rows.innerHTML = items.map(item => {
                     const diff = cat.type === 'income' ? (item.real - item.budget) : (item.budget - item.real);
                     return `
-                        <tr class="border-b border-slate-50 hover:bg-slate-50/60 group transition">
-                            <td class="py-4 px-4">
-                                <input type="text" class="input-field border-transparent bg-transparent font-bold hover:border-slate-200" value="${item.name}" onchange="updateField('${catId}', '${item.id}', 'name', this.value)" placeholder="Concepto...">
+                        <tr class="hover:bg-blue-50/30 group transition-colors">
+                            <td class="py-3 px-6">
+                                <input type="text" class="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none font-semibold text-slate-700 py-1 transition-colors" value="${item.name}" onchange="updateField('${catId}', '${item.id}', 'name', this.value)" placeholder="Escribe un concepto...">
                             </td>
-                            <td class="py-4 px-4">
-                                <input type="number" class="input-field text-center font-bold" value="${item.budget}" onchange="updateField('${catId}', '${item.id}', 'budget', this.value)">
+                            <td class="py-3 px-6">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                    <input type="number" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-right font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors" value="${item.budget}" onchange="updateField('${catId}', '${item.id}', 'budget', this.value)">
+                                </div>
                             </td>
-                            <td class="py-4 px-4">
-                                <input type="number" class="input-field text-center font-bold" value="${item.real}" onchange="updateField('${catId}', '${item.id}', 'real', this.value)">
+                            <td class="py-3 px-6">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                    <input type="number" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-right font-bold text-blue-700 outline-none focus:border-blue-500 transition-colors" value="${item.real}" onchange="updateField('${catId}', '${item.id}', 'real', this.value)">
+                                </div>
                             </td>
-                            <td class="py-4 px-4 text-right font-black ${diff >= 0 ? 'positive' : 'negative'} text-base">
+                            <td class="py-3 px-6 text-right font-black ${diff >= 0 ? 'text-emerald-500' : 'text-rose-500'} text-sm whitespace-nowrap">
                                 ${formatCurrency(diff)}
                             </td>
-                            <td class="py-4 px-4 text-center">
-                                <button onclick="removeItem('${catId}', '${item.id}')" class="text-slate-200 hover:text-rose-500 transition opacity-0 group-hover:opacity-100">🗑️</button>
+                            <td class="py-3 px-6 text-center">
+                                <button onclick="removeItem('${catId}', '${item.id}')" class="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" title="Eliminar fila">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                </button>
                             </td>
                         </tr>`;
                 }).join('');
@@ -453,19 +744,18 @@
                 const tD = cat.type === 'income' ? (tR - tB) : (tB - tR);
 
                 footer.innerHTML = `
-                    <td class="p-6 uppercase text-[10px] text-slate-400 tracking-[3px] font-black">Totales de Hoja</td>
-                    <td class="p-6 text-center text-slate-800">${formatCurrency(tB)}</td>
-                    <td class="p-6 text-center text-slate-800">${formatCurrency(tR)}</td>
-                    <td class="p-6 text-right ${tD >= 0 ? 'positive' : 'negative'} font-black text-xl">${formatCurrency(tD)}</td>
+                    <td class="py-5 px-6 uppercase text-[10px] text-slate-500 tracking-widest font-extrabold">Totales Categoría</td>
+                    <td class="py-5 px-6 text-right font-black text-slate-700 text-sm bg-slate-100/50">${formatCurrency(tB)}</td>
+                    <td class="py-5 px-6 text-right font-black text-blue-800 text-sm bg-blue-50/50">${formatCurrency(tR)}</td>
+                    <td class="py-5 px-6 text-right ${tD >= 0 ? 'text-emerald-600' : 'text-rose-600'} font-black text-base">${formatCurrency(tD)}</td>
                     <td></td>`;
             }
 
-            updateGlobalStats();
+            updateDashboardKPIs();
         };
 
-        const updateGlobalStats = () => {
+        const updateDashboardKPIs = () => {
             let tIncR = 0, tIncB = 0, tExpR = 0, tExpB = 0;
-
             state.categories.forEach(cat => {
                 const items = state.data[cat.id] || [];
                 const r = items.reduce((a,b)=>a+b.real, 0);
@@ -473,14 +763,12 @@
                 if (cat.type === 'income') { tIncR += r; tIncB += b; }
                 else { tExpR += r; tExpB += b; }
             });
-
             const bal = tIncR - tExpR;
             const perf = tIncR > 0 ? (bal / tIncR) * 100 : 0;
 
             document.getElementById('summary-income').innerText = formatCurrency(tIncR);
             document.getElementById('summary-expenses').innerText = formatCurrency(tExpR);
             document.getElementById('summary-balance').innerText = formatCurrency(bal);
-            document.getElementById('summary-balance').className = `text-2xl font-black mt-2 ${bal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
             document.getElementById('summary-percent').innerText = `${perf.toFixed(1)}%`;
 
             refreshDashboardVisuals(tIncB, tIncR, tExpB, tExpR);
@@ -490,32 +778,52 @@
         const refreshAlertSystem = (perf) => {
             const cont = document.getElementById('alerts-container');
             let alerts = [];
-            if (perf > 10) alerts.push({ m: 'Salud financiera óptima: Ahorras más del 10%.', c: 'bg-emerald-50 text-emerald-700 border-emerald-100' });
-            else if (perf > 0) alerts.push({ m: 'Alerta de ahorro: Tu margen es muy estrecho.', c: 'bg-amber-50 text-amber-700 border-amber-100' });
-            else alerts.push({ m: 'CRÍTICO: Gastos superan ingresos. Recorta costos variables.', c: 'bg-rose-50 text-rose-700 border-rose-100' });
+            
+            // Regla de Ahorro
+            if (perf >= 10) alerts.push({ m: 'Meta de ahorro superada (>10%). ¡Excelente gestión!', c: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: '🌟' });
+            else if (perf > 0) alerts.push({ m: 'Margen de ahorro estrecho. Identifica gastos prescindibles.', c: 'bg-amber-50 text-amber-700 border-amber-100', icon: '⚠️' });
+            else alerts.push({ m: 'ALERTA ROJA: Gastos superan ingresos. Estás generando deuda.', c: 'bg-rose-50 text-rose-700 border-rose-100', icon: '🚨' });
 
+            // Desvíos por categoría
             state.categories.filter(c=>c.type === 'expense').forEach(c => {
                 const items = state.data[c.id] || [];
                 const b = items.reduce((a,b)=>a+b.budget, 0);
                 const r = items.reduce((a,b)=>a+b.real, 0);
-                if (r > b && b > 0) alerts.push({ m: `Exceso en "${c.name}": Gastaste ${formatCurrency(r-b)} más de lo planeado.`, c: 'bg-rose-100 text-rose-800 border-rose-200' });
+                if (r > b && b > 0) alerts.push({ m: `Te has excedido en "${c.name}" por ${formatCurrency(r-b)}.`, c: 'bg-rose-50 text-rose-600 border-rose-100', icon: '📉' });
             });
-            cont.innerHTML = alerts.map(a => `<div class="p-3 rounded-2xl text-[10px] font-bold border ${a.c} shadow-sm">${a.m}</div>`).join('');
+            
+            cont.innerHTML = alerts.map(a => `
+                <div class="p-3 rounded-xl text-xs font-bold border ${a.c} flex items-start gap-2">
+                    <span class="text-sm mt-0.5">${a.icon}</span> <span>${a.m}</span>
+                </div>
+            `).join('');
         };
 
         const refreshDashboardVisuals = (incB, incR, expB, expR) => {
+            // Chart global defaults
+            Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+            Chart.defaults.color = '#64748b';
+
             const ctx1 = document.getElementById('comparisonChart').getContext('2d');
             if (comparisonChart) comparisonChart.destroy();
             comparisonChart = new Chart(ctx1, {
                 type: 'bar',
                 data: {
-                    labels: ['Entradas ($)', 'Salidas ($)'],
+                    labels: ['Entradas (Ingresos)', 'Salidas (Gastos)'],
                     datasets: [
-                        { label: 'Presupuestado', data: [incB, expB], backgroundColor: '#f1f5f9', borderRadius: 8 },
-                        { label: 'Real', data: [incR, expR], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 8 }
+                        { label: 'Presupuesto Planeado', data: [incB, expB], backgroundColor: '#e2e8f0', borderRadius: 8, barPercentage: 0.6 },
+                        { label: 'Monto Real', data: [incR, expR], backgroundColor: ['#3b82f6', '#6366f1'], borderRadius: 8, barPercentage: 0.6 }
                     ]
                 },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f8fafc' } }, x: { grid: { display: false } } } }
+                options: { 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { weight: 'bold' } } } }, 
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, border: { dash: [4, 4] } },
+                        x: { grid: { display: false, drawBorder: false } }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
             });
 
             const ctx2 = document.getElementById('distributionChart').getContext('2d');
@@ -527,14 +835,22 @@
                     labels: expCats.map(c => c.name),
                     datasets: [{
                         data: expCats.map(c => (state.data[c.id] || []).reduce((a,b)=>a+b.real,0)),
-                        backgroundColor: ['#6366f1', '#f43f5e', '#06b6d4', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#d946ef']
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#0ea5e9'],
+                        borderWidth: 0,
+                        hoverOffset: 10
                     }]
                 },
-                options: { maintainAspectRatio: false, cutout: '78%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 6, font: { size: 9, weight: '700' }, padding: 15 } } } }
+                options: { 
+                    maintainAspectRatio: false, 
+                    cutout: '75%', 
+                    plugins: { 
+                        legend: { position: 'right', labels: { usePointStyle: true, padding: 15, font: { size: 11, weight: '600' } } } 
+                    } 
+                }
             });
         };
 
-        // --- ASISTENCIA INTELIGENTE (GEMINI IA) ---
+        // --- INTEGRACIÓN IA GEMINI ---
         const callGemini = async (prompt, system) => {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             try {
@@ -544,17 +860,17 @@
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: system }] } })
                 });
                 const d = await res.json();
-                return d.candidates?.[0]?.content?.parts?.[0]?.text || "Sin respuesta.";
-            } catch (e) { return "Error de conexión IA."; }
+                return d.candidates?.[0]?.content?.parts?.[0]?.text || "No fue posible generar una respuesta en este momento.";
+            } catch (e) { return "Error de red al contactar con Gemini IA."; }
         };
 
         window.aiAnalyze = async () => {
             const box = document.getElementById('ai-response-box');
             const cont = document.getElementById('ai-content');
             box.classList.remove('hidden'); document.getElementById('ai-placeholder').classList.add('hidden');
-            cont.classList.add('ai-loading'); cont.innerText = "Gemini está analizando tu comportamiento financiero...";
-            const prompt = `Analiza mi presupuesto de Colombia:\n${JSON.stringify(state.data)}\nDame un diagnóstico de 3 puntos clave sobre ahorro y gastos excesivos.`;
-            cont.innerText = await callGemini(prompt, "Eres un asesor financiero experto de Colombia (Bogotá). Sé directo y profesional.");
+            cont.classList.add('ai-loading'); cont.innerText = "Gemini está procesando tus datos financieros...";
+            const prompt = `Actúa como un asesor financiero en Colombia. Analiza este presupuesto:\n${JSON.stringify(state.data)}\nEscribe un diagnóstico breve (máx 3 viñetas) destacando lo bueno y lo que se debe mejorar. Usa tono motivador.`;
+            cont.innerText = await callGemini(prompt, "Experto financiero colombiano.");
             cont.classList.remove('ai-loading');
         };
 
@@ -562,51 +878,47 @@
             const box = document.getElementById('ai-response-box');
             const cont = document.getElementById('ai-content');
             box.classList.remove('hidden'); document.getElementById('ai-placeholder').classList.add('hidden');
-            cont.classList.add('ai-loading'); cont.innerText = "Buscando fugas de dinero...";
-            const prompt = `Basado en mis gastos: ${JSON.stringify(state.data)}, sugiere 2 tácticas de ahorro específicas para el mercado colombiano actual.`;
-            cont.innerText = await callGemini(prompt, "Experto en economía doméstica y ahorro personal.");
+            cont.classList.add('ai-loading'); cont.innerText = "Buscando oportunidades de ahorro...";
+            const prompt = `Mira estos gastos de un residente en Colombia: ${JSON.stringify(state.data)}. Sugiere 2 tips de ahorro MUY ESPECÍFICOS para estas categorías. Sé breve y directo.`;
+            cont.innerText = await callGemini(prompt, "Asesor de economía doméstica.");
             cont.classList.remove('ai-loading');
         };
 
         window.aiSpeechSummary = async () => {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
             const bal = document.getElementById('summary-balance').innerText;
-            const text = `Tu resumen: Tienes un balance de ${bal}. ` + (bal.includes('-') ? "Cuidado, estás en déficit mensual." : "Buen trabajo, tienes saldo a favor.");
+            const msg = `Hola. Tu resumen mensual indica que el balance actual es de ${bal}. ` + (bal.includes('-') ? "Atención, los gastos están superando los ingresos, te recomiendo revisar la categoría de mayores egresos." : "¡Excelente trabajo! Mantienes un saldo a favor que puedes destinar a inversión o ahorro.");
+            
+            showToast("Generando audio...", "🎙️");
+            
             try {
                 const r = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } } })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: msg }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } } })
                 });
                 const d = await r.json();
                 const bin = atob(d.candidates[0].content.parts[0].inlineData.data);
                 const bytes = new Uint8Array(bin.length);
                 for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                const blob = new Blob([createWavHeader(bytes, 24000)], { type: 'audio/wav' });
+                
+                // Función auxiliar para WAV
+                const buffer = new ArrayBuffer(44 + bytes.length);
+                const view = new DataView(buffer);
+                const writeString = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+                writeString(0, 'RIFF'); view.setUint32(4, 32 + bytes.length, true);
+                writeString(8, 'WAVE'); writeString(12, 'fmt '); view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+                view.setUint32(24, 24000, true); view.setUint32(28, 48000, true);
+                view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+                writeString(36, 'data'); view.setUint32(40, bytes.length, true);
+                const pcmInt16 = new Int16Array(bytes.buffer);
+                for (let i = 0; i < pcmInt16.length; i++) view.setInt16(44 + i * 2, pcmInt16[i], true);
+                
+                const blob = new Blob([buffer], { type: 'audio/wav' });
                 new Audio(URL.createObjectURL(blob)).play();
-            } catch (e) { console.error("Fallo Voz:", e); }
+            } catch (e) { showToast("Error al generar audio", "❌"); }
         };
-
-        function createWavHeader(pcmData, sampleRate) {
-            const buffer = new ArrayBuffer(44 + pcmData.length);
-            const view = new DataView(buffer);
-            const writeString = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
-            writeString(0, 'RIFF'); view.setUint32(4, 32 + pcmData.length, true);
-            writeString(8, 'WAVE'); writeString(12, 'fmt '); view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); view.setUint16(22, 1, true);
-            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
-            view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-            writeString(36, 'data'); view.setUint32(40, pcmData.length, true);
-            const pcmInt16 = new Int16Array(pcmData.buffer);
-            for (let i = 0; i < pcmInt16.length; i++) view.setInt16(44 + i * 2, pcmInt16[i], true);
-            return buffer;
-        }
-
-        window.resetData = () => { if(confirm("¿Reiniciar montos reales de este mes?")) { Object.keys(state.data).forEach(k => state.data[k].forEach(i => i.real = 0)); render(); saveData(); } };
-        window.manualSave = () => saveData();
-
-        initAuth();
-        render();
     </script>
 </body>
 </html>
