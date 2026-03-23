@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador Financiero Pro - Colombia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .card { background: white; border-radius: 1.25rem; box-shadow: 0 4px 20px -5px rgba(0,0,0,0.07); transition: transform 0.2s ease; }
+        .input-field { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; padding: 0.65rem; outline: none; transition: all 0.2s; font-size: 0.875rem; }
+        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .nav-item { cursor: pointer; transition: all 0.2s; border-radius: 0.75rem; color: #94a3b8; border: 1px solid transparent; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.05); color: #f1f5f9; }
+        .nav-active { background-color: #3b82f6 !important; color: white !important; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        
+        @keyframes pulse-ai { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .ai-loading { animation: pulse-ai 1.5s infinite; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .online { background-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+        .offline { background-color: #64748b; }
+
+        #sidebar-nav::-webkit-scrollbar { width: 4px; }
+        #sidebar-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        .btn-action { transition: all 0.2s; }
+        .btn-action:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Sidebar de Navegación -->
+    <aside class="w-full md:w-80 bg-slate-900 text-slate-300 flex flex-col p-6 space-y-2 sticky top-0 h-auto md:h-screen z-50 shadow-2xl">
+        <div class="mb-10 px-2">
+            <div class="flex items-center gap-4">
+                <div class="p-2.5 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-900/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">Patrimonio Pro</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="connection-status" class="status-dot offline"></span>
+                        <span class="text-[9px] uppercase font-black text-slate-500 tracking-widest">Nube Sincronizada</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <nav id="sidebar-nav" class="flex-1 space-y-1 overflow-y-auto pr-1">
+            <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item p-3.5 flex items-center gap-3 nav-active mb-4">
+                <span class="text-xl">📊</span> Resumen Ejecutivo
+            </div>
+            
+            <div class="pt-6 pb-2 px-3 text-[10px] font-bold text-slate-600 uppercase tracking-[3px] border-t border-slate-800">Mis Hojas de Cálculo</div>
+            <div id="dynamic-nav-items" class="space-y-1">
+                <!-- Se poblará dinámicamente -->
+            </div>
+
+            <button onclick="openNewCategoryModal()" class="w-full mt-6 p-4 flex items-center gap-3 text-xs text-blue-400 hover:text-blue-300 font-bold border-2 border-dashed border-slate-800 rounded-2xl hover:bg-slate-800/50 transition-all duration-300 group">
+                <span class="bg-blue-900/30 p-1.5 rounded-lg group-hover:rotate-90 transition-transform">➕</span> Nueva Sección
+            </button>
+        </nav>
+
+        <div class="mt-auto p-4 bg-slate-800/40 rounded-2xl border border-slate-700/50">
+            <div id="user-info" class="text-[9px] text-slate-500 font-mono truncate mb-2">Conectando...</div>
+            <div class="flex items-center justify-between">
+                <span id="save-status-text" class="text-[10px] font-bold text-slate-400">Todo al día</span>
+                <span id="save-status-icon">✅</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Área de Contenido -->
+    <main class="flex-1 p-5 md:p-10 overflow-y-auto">
+        
+        <!-- VISTA DASHBOARD -->
+        <div id="view-dashboard" class="view-content space-y-10">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h2 class="text-4xl font-black text-slate-800 tracking-tight">Panel Principal</h2>
+                    <p class="text-slate-500 font-medium">Análisis consolidado de tu flujo financiero en Colombia</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="resetData()" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm btn-action">Limpiar Ejecutado</button>
+                    <button onclick="manualSave()" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition shadow-xl shadow-slate-200 btn-action">Forzar Sincronización</button>
+                </div>
+            </header>
+
+            <!-- KPIs Principales -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card p-6 border-t-4 border-emerald-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ingresos Reales</p>
+                    <h3 id="summary-income" class="text-2xl font-black text-slate-800 mt-2">$ 0</h3>
+                </div>
+                <div class="card p-6 border-t-4 border-rose-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gastos Reales</p>
+                    <h3 id="summary-expenses" class="text-2xl font-black text-slate-800 mt-2">$ 0</h3>
+                </div>
+                <div class="card p-6 border-t-4 border-blue-600">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saldo Ahorro</p>
+                    <h3 id="summary-balance" class="text-2xl font-black mt-2">$ 0</h3>
+                </div>
+                <div class="card p-6 border-t-4 border-amber-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">% de Ahorro</p>
+                    <h3 id="summary-percent" class="text-2xl font-black text-slate-800 mt-2">0%</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div class="lg:col-span-2 space-y-10">
+                    <!-- Gráfico Barras -->
+                    <section class="card p-8">
+                        <div class="flex items-center justify-between mb-8">
+                            <h4 class="font-bold text-slate-800 text-lg">Presupuesto vs Realidad (COP)</h4>
+                        </div>
+                        <div class="h-[350px]"><canvas id="comparisonChart"></canvas></div>
+                    </section>
+                    
+                    <!-- IA Asistente -->
+                    <section class="card p-8 border-2 border-purple-100 bg-gradient-to-br from-white to-purple-50/40">
+                        <div class="flex items-center justify-between mb-6">
+                            <h4 class="font-bold text-slate-800 flex items-center gap-2">Asistente Gemini ✨</h4>
+                            <div class="flex gap-6">
+                                <button onclick="aiAnalyze()" class="text-xs font-bold text-purple-600 hover:text-purple-900 underline underline-offset-4 transition">Analizar Mes</button>
+                                <button onclick="aiSuggestions()" class="text-xs font-bold text-indigo-600 hover:text-indigo-900 underline underline-offset-4 transition">Tips Ahorro</button>
+                                <button onclick="aiSpeechSummary()" class="text-xs font-bold text-slate-600 hover:text-black underline underline-offset-4 transition">Oír Resumen</button>
+                            </div>
+                        </div>
+                        <div id="ai-response-box" class="hidden">
+                            <p id="ai-content" class="text-sm text-slate-700 leading-relaxed italic bg-white p-6 rounded-2xl border border-purple-100 shadow-sm whitespace-pre-wrap"></p>
+                        </div>
+                        <div id="ai-placeholder" class="text-sm text-slate-400 italic bg-white/50 p-6 rounded-2xl border border-dashed border-slate-200">Solicita un diagnóstico para que la IA procese tus datos reales...</div>
+                    </section>
+                </div>
+
+                <div class="space-y-10">
+                    <!-- Gráfico Dona -->
+                    <section class="card p-8 text-center">
+                        <h4 class="font-bold text-slate-800 mb-8 text-left">Distribución de Gastos</h4>
+                        <div class="h-[280px]"><canvas id="distributionChart"></canvas></div>
+                    </section>
+                    <!-- Alertas -->
+                    <section class="card p-8">
+                        <h4 class="font-bold text-slate-800 mb-6 text-[10px] uppercase tracking-widest text-slate-400">Estado de Alertas</h4>
+                        <div id="alerts-container" class="space-y-3"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA DE DETALLE DINÁMICO -->
+        <div id="view-details" class="view-content hidden space-y-10">
+            <header class="flex flex-col md:flex-row justify-between items-end gap-6">
+                <div>
+                    <div class="flex items-center gap-4">
+                        <h2 id="view-title" class="text-4xl font-black text-slate-800 capitalize tracking-tight">Sección</h2>
+                        <button onclick="deleteCurrentCategory()" id="btn-delete-cat" class="text-[10px] text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-200 px-3 py-1.5 rounded-lg transition font-bold uppercase">Borrar Hoja</button>
+                    </div>
+                    <p id="view-subtitle" class="text-slate-500 mt-2 font-medium">Control granular de montos presupuestados y reales</p>
+                </div>
+                <button onclick="addItem()" class="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 transition flex items-center gap-2 btn-action">
+                    <span>➕</span> Nuevo Concepto
+                </button>
+            </header>
+
+            <section class="card overflow-hidden">
+                <div id="view-header-bg" class="px-8 py-6 border-b">
+                    <h3 id="table-title" class="font-bold text-white tracking-wide text-lg">Cargando datos...</h3>
+                </div>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-[10px] uppercase font-bold border-b border-slate-100">
+                                <th class="pb-4 px-4">Descripción del Movimiento</th>
+                                <th class="pb-4 px-4 w-44 text-center">Presupuesto ($)</th>
+                                <th class="pb-4 px-4 w-44 text-center">Real Ejecutado ($)</th>
+                                <th class="pb-4 px-4 text-right w-44">Diferencia ($)</th>
+                                <th class="pb-4 px-4 w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="details-rows" class="text-sm font-medium text-slate-700">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-slate-50/80 font-bold border-t border-slate-200" id="details-footer">
+                                <!-- Totales -->
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Modal: Nueva Categoría -->
+    <div id="modal-new-cat" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] hidden p-6">
+        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl">
+            <h3 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">Nueva Hoja</h3>
+            <p class="text-slate-400 text-sm mb-8 font-medium">Define una nueva sección para tu planificador.</p>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block tracking-widest">Nombre personalizado</label>
+                    <input type="text" id="new-cat-name" placeholder="Ej: Viajes, Mascota, Inversiones..." class="input-field py-4 text-lg font-semibold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block tracking-widest">Tipo de flujo</label>
+                    <select id="new-cat-type" class="input-field py-4 cursor-pointer font-semibold bg-slate-50">
+                        <option value="expense">📉 GASTO (Salida de dinero)</option>
+                        <option value="income">💰 INGRESO (Entrada de dinero)</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button onclick="closeNewCategoryModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition">Cancelar</button>
+                    <button onclick="createNewCategory()" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition">Crear Hoja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE APIS
+        const apiKey = ""; 
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // INICIALIZACIÓN FIREBASE
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ESTADO DE LA APLICACIÓN (Estructura Dinámica)
+        let state = {
+            currentView: 'dashboard',
+            categories: [
+                { id: 'ingresos', name: 'Ingresos', icon: '💰', type: 'income', color: 'bg-emerald-600', sub: 'Salarios y rentas' },
+                { id: 'hogar', name: 'Gastos Hogar', icon: '🏠', type: 'expense', color: 'bg-indigo-600', sub: 'Servicios y administración' },
+                { id: 'financieras', name: 'Obligaciones', icon: '💳', type: 'expense', color: 'bg-rose-600', sub: 'Deudas y préstamos' },
+                { id: 'salud', name: 'Salud', icon: '🏥', type: 'expense', color: 'bg-cyan-600', sub: 'Bienestar y farmacia' },
+                { id: 'ocio', name: 'Otros / Ocio', icon: '🍔', type: 'expense', color: 'bg-pink-600', sub: 'Varios y diversión' }
+            ],
+            data: {
+                ingresos: [{ id: 'i1', name: 'Sueldo Principal', budget: 5000000, real: 0 }],
+                hogar: [{ id: 'h1', name: 'Administración', budget: 450000, real: 0 }],
+                financieras: [{ id: 'f1', name: 'Cuota Crédito', budget: 1000000, real: 0 }],
+                salud: [{ id: 's1', name: 'E P S / Medicina', budget: 150000, real: 0 }],
+                ocio: [{ id: 'o1', name: 'Mercado', budget: 800000, real: 0 }]
+            }
+        };
+
+        let currentUser = null;
+        let saveTimeout;
+        let comparisonChart, distributionChart;
+
+        // --- AUTENTICACIÓN Y PERSISTENCIA (FIRESTORE) ---
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('connection-status').classList.replace('offline', 'online');
+                document.getElementById('user-info').innerText = `CONEXIÓN ID: ${user.uid.substring(0,18)}`;
+                subscribeToData(user.uid);
+            }
+        });
+
+        const subscribeToData = (userId) => {
+            // Regla de ruta Firestore (RULE 1): /artifacts/{appId}/users/{userId}/{collectionName}
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'proPlanConfig', 'current');
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudState = docSnap.data().state;
+                    if (cloudState) {
+                        state = { ...state, ...cloudState };
+                        render();
+                    }
+                } else {
+                    saveData(); // Inicializa nube si es nuevo
+                }
+            }, (err) => console.error("Fallo Sync Nube:", err));
+        };
+
+        const saveData = async () => {
+            if (!currentUser) return;
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'proPlanConfig', 'current');
+            setSaveStatus('saving');
+            try {
+                await setDoc(docRef, { state, lastUpdated: new Date().toISOString() });
+                setSaveStatus('saved');
+            } catch (e) { 
+                console.error("Error Guardado:", e);
+                setSaveStatus('error'); 
+            }
+        };
+
+        const autoSave = () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveData, 2000);
+        };
+
+        const setSaveStatus = (status) => {
+            const btnText = document.getElementById('save-status-text');
+            const btnIcon = document.getElementById('save-status-icon');
+            if (status === 'saving') { btnText.innerText = 'Guardando...'; btnIcon.innerText = '⏳'; }
+            else if (status === 'saved') { btnText.innerText = 'Todo al día'; btnIcon.innerText = '✅'; }
+            else { btnText.innerText = 'Falla de Nube'; btnIcon.innerText = '❌'; }
+        };
+
+        // --- GESTIÓN DE SECCIONES DINÁMICAS ---
+        window.openNewCategoryModal = () => document.getElementById('modal-new-cat').classList.remove('hidden');
+        window.closeNewCategoryModal = () => document.getElementById('modal-new-cat').classList.add('hidden');
+
+        window.createNewCategory = () => {
+            const nameInp = document.getElementById('new-cat-name');
+            const typeSel = document.getElementById('new-cat-type');
+            if (!nameInp.value) return;
+            
+            const id = 'sec_' + Date.now();
+            const colors = ['bg-indigo-600', 'bg-purple-600', 'bg-blue-600', 'bg-cyan-600', 'bg-emerald-600', 'bg-rose-600'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            state.categories.push({ id, name: nameInp.value, icon: '📂', type: typeSel.value, color: randomColor, sub: 'Hoja personalizada' });
+            state.data[id] = [{ id: 'it_' + Date.now(), name: 'Nuevo concepto', budget: 0, real: 0 }];
+            
+            nameInp.value = '';
+            closeNewCategoryModal();
+            switchView(id);
+            autoSave();
+        };
+
+        window.deleteCurrentCategory = () => {
+            const catId = state.currentView;
+            if (catId === 'dashboard' || catId === 'ingresos') return;
+            if (confirm(`¿Eliminar permanentemente la sección "${state.categories.find(c=>c.id === catId).name}"?`)) {
+                state.categories = state.categories.filter(c => c.id !== catId);
+                delete state.data[catId];
+                switchView('dashboard');
+                autoSave();
+            }
+        };
+
+        window.addItem = () => {
+            const catId = state.currentView;
+            if (!state.data[catId]) state.data[catId] = [];
+            state.data[catId].push({ id: 'it_' + Date.now(), name: '', budget: 0, real: 0 });
+            render();
+            autoSave();
+        };
+
+        window.removeItem = (catId, itemId) => {
+            state.data[catId] = state.data[catId].filter(i => i.id !== itemId);
+            render();
+            autoSave();
+        };
+
+        // --- LÓGICA DE INTERFAZ ---
+        window.switchView = (viewName) => {
+            state.currentView = viewName;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('nav-active'));
+            const targetNav = document.getElementById(`nav-${viewName}`);
+            if (targetNav) targetNav.classList.add('nav-active');
+
+            if (viewName === 'dashboard') {
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                document.getElementById('view-details').classList.add('hidden');
+            } else {
+                document.getElementById('view-dashboard').classList.add('hidden');
+                document.getElementById('view-details').classList.remove('hidden');
+                const cat = state.categories.find(c => c.id === viewName);
+                if (cat) setupDetailsView(cat);
+            }
+            render();
+        };
+
+        const setupDetailsView = (cat) => {
+            document.getElementById('view-title').innerText = cat.name;
+            document.getElementById('view-subtitle').innerText = cat.sub;
+            document.getElementById('view-header-bg').className = `px-8 py-6 border-b ${cat.color}`;
+            document.getElementById('table-title').innerText = `Gestión: ${cat.name}`;
+            document.getElementById('btn-delete-cat').style.display = (cat.id === 'ingresos' ? 'none' : 'block');
+        };
+
+        window.formatCurrency = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+
+        window.updateField = (catId, itemId, field, value) => {
+            const items = state.data[catId];
+            const item = items.find(i => i.id === itemId);
+            if (item) {
+                if (field === 'name') item.name = value;
+                else item[field] = parseFloat(value) || 0;
+                render();
+                autoSave();
+            }
+        };
+
+        window.render = () => {
+            // Render de Navegación Lateral
+            const navContainer = document.getElementById('dynamic-nav-items');
+            navContainer.innerHTML = state.categories.map(cat => `
+                <div onclick="switchView('${cat.id}')" id="nav-${cat.id}" class="nav-item p-3.5 flex items-center gap-3 ${state.currentView === cat.id ? 'nav-active' : ''}">
+                    <span class="text-xl">${cat.icon}</span> ${cat.name}
+                </div>
+            `).join('');
+
+            // Render de Tablas de Registro
+            if (state.currentView !== 'dashboard') {
+                const catId = state.currentView;
+                const cat = state.categories.find(c => c.id === catId);
+                const items = state.data[catId] || [];
+                const rows = document.getElementById('details-rows');
+                const footer = document.getElementById('details-footer');
+
+                rows.innerHTML = items.map(item => {
+                    const diff = cat.type === 'income' ? (item.real - item.budget) : (item.budget - item.real);
+                    return `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/60 group transition">
+                            <td class="py-4 px-4">
+                                <input type="text" class="input-field border-transparent bg-transparent font-bold hover:border-slate-200" value="${item.name}" onchange="updateField('${catId}', '${item.id}', 'name', this.value)" placeholder="Concepto...">
+                            </td>
+                            <td class="py-4 px-4">
+                                <input type="number" class="input-field text-center font-bold" value="${item.budget}" onchange="updateField('${catId}', '${item.id}', 'budget', this.value)">
+                            </td>
+                            <td class="py-4 px-4">
+                                <input type="number" class="input-field text-center font-bold" value="${item.real}" onchange="updateField('${catId}', '${item.id}', 'real', this.value)">
+                            </td>
+                            <td class="py-4 px-4 text-right font-black ${diff >= 0 ? 'positive' : 'negative'} text-base">
+                                ${formatCurrency(diff)}
+                            </td>
+                            <td class="py-4 px-4 text-center">
+                                <button onclick="removeItem('${catId}', '${item.id}')" class="text-slate-200 hover:text-rose-500 transition opacity-0 group-hover:opacity-100">🗑️</button>
+                            </td>
+                        </tr>`;
+                }).join('');
+
+                const tB = items.reduce((a,b)=>a+b.budget, 0);
+                const tR = items.reduce((a,b)=>a+b.real, 0);
+                const tD = cat.type === 'income' ? (tR - tB) : (tB - tR);
+
+                footer.innerHTML = `
+                    <td class="p-6 uppercase text-[10px] text-slate-400 tracking-[3px] font-black">Totales de Hoja</td>
+                    <td class="p-6 text-center text-slate-800">${formatCurrency(tB)}</td>
+                    <td class="p-6 text-center text-slate-800">${formatCurrency(tR)}</td>
+                    <td class="p-6 text-right ${tD >= 0 ? 'positive' : 'negative'} font-black text-xl">${formatCurrency(tD)}</td>
+                    <td></td>`;
+            }
+
+            updateGlobalStats();
+        };
+
+        const updateGlobalStats = () => {
+            let tIncR = 0, tIncB = 0, tExpR = 0, tExpB = 0;
+
+            state.categories.forEach(cat => {
+                const items = state.data[cat.id] || [];
+                const r = items.reduce((a,b)=>a+b.real, 0);
+                const b = items.reduce((a,b)=>a+b.budget, 0);
+                if (cat.type === 'income') { tIncR += r; tIncB += b; }
+                else { tExpR += r; tExpB += b; }
+            });
+
+            const bal = tIncR - tExpR;
+            const perf = tIncR > 0 ? (bal / tIncR) * 100 : 0;
+
+            document.getElementById('summary-income').innerText = formatCurrency(tIncR);
+            document.getElementById('summary-expenses').innerText = formatCurrency(tExpR);
+            document.getElementById('summary-balance').innerText = formatCurrency(bal);
+            document.getElementById('summary-balance').className = `text-2xl font-black mt-2 ${bal >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('summary-percent').innerText = `${perf.toFixed(1)}%`;
+
+            refreshDashboardVisuals(tIncB, tIncR, tExpB, tExpR);
+            refreshAlertSystem(perf);
+        };
+
+        const refreshAlertSystem = (perf) => {
+            const cont = document.getElementById('alerts-container');
+            let alerts = [];
+            if (perf > 10) alerts.push({ m: 'Salud financiera óptima: Ahorras más del 10%.', c: 'bg-emerald-50 text-emerald-700 border-emerald-100' });
+            else if (perf > 0) alerts.push({ m: 'Alerta de ahorro: Tu margen es muy estrecho.', c: 'bg-amber-50 text-amber-700 border-amber-100' });
+            else alerts.push({ m: 'CRÍTICO: Gastos superan ingresos. Recorta costos variables.', c: 'bg-rose-50 text-rose-700 border-rose-100' });
+
+            state.categories.filter(c=>c.type === 'expense').forEach(c => {
+                const items = state.data[c.id] || [];
+                const b = items.reduce((a,b)=>a+b.budget, 0);
+                const r = items.reduce((a,b)=>a+b.real, 0);
+                if (r > b && b > 0) alerts.push({ m: `Exceso en "${c.name}": Gastaste ${formatCurrency(r-b)} más de lo planeado.`, c: 'bg-rose-100 text-rose-800 border-rose-200' });
+            });
+            cont.innerHTML = alerts.map(a => `<div class="p-3 rounded-2xl text-[10px] font-bold border ${a.c} shadow-sm">${a.m}</div>`).join('');
+        };
+
+        const refreshDashboardVisuals = (incB, incR, expB, expR) => {
+            const ctx1 = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+            comparisonChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Entradas ($)', 'Salidas ($)'],
+                    datasets: [
+                        { label: 'Presupuestado', data: [incB, expB], backgroundColor: '#f1f5f9', borderRadius: 8 },
+                        { label: 'Real', data: [incR, expR], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 8 }
+                    ]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f8fafc' } }, x: { grid: { display: false } } } }
+            });
+
+            const ctx2 = document.getElementById('distributionChart').getContext('2d');
+            if (distributionChart) distributionChart.destroy();
+            const expCats = state.categories.filter(c => c.type === 'expense');
+            distributionChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: expCats.map(c => c.name),
+                    datasets: [{
+                        data: expCats.map(c => (state.data[c.id] || []).reduce((a,b)=>a+b.real,0)),
+                        backgroundColor: ['#6366f1', '#f43f5e', '#06b6d4', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6', '#d946ef']
+                    }]
+                },
+                options: { maintainAspectRatio: false, cutout: '78%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 6, font: { size: 9, weight: '700' }, padding: 15 } } } }
+            });
+        };
+
+        // --- ASISTENCIA INTELIGENTE (GEMINI IA) ---
+        const callGemini = async (prompt, system) => {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: system }] } })
+                });
+                const d = await res.json();
+                return d.candidates?.[0]?.content?.parts?.[0]?.text || "Sin respuesta.";
+            } catch (e) { return "Error de conexión IA."; }
+        };
+
+        window.aiAnalyze = async () => {
+            const box = document.getElementById('ai-response-box');
+            const cont = document.getElementById('ai-content');
+            box.classList.remove('hidden'); document.getElementById('ai-placeholder').classList.add('hidden');
+            cont.classList.add('ai-loading'); cont.innerText = "Gemini está analizando tu comportamiento financiero...";
+            const prompt = `Analiza mi presupuesto de Colombia:\n${JSON.stringify(state.data)}\nDame un diagnóstico de 3 puntos clave sobre ahorro y gastos excesivos.`;
+            cont.innerText = await callGemini(prompt, "Eres un asesor financiero experto de Colombia (Bogotá). Sé directo y profesional.");
+            cont.classList.remove('ai-loading');
+        };
+
+        window.aiSuggestions = async () => {
+            const box = document.getElementById('ai-response-box');
+            const cont = document.getElementById('ai-content');
+            box.classList.remove('hidden'); document.getElementById('ai-placeholder').classList.add('hidden');
+            cont.classList.add('ai-loading'); cont.innerText = "Buscando fugas de dinero...";
+            const prompt = `Basado en mis gastos: ${JSON.stringify(state.data)}, sugiere 2 tácticas de ahorro específicas para el mercado colombiano actual.`;
+            cont.innerText = await callGemini(prompt, "Experto en economía doméstica y ahorro personal.");
+            cont.classList.remove('ai-loading');
+        };
+
+        window.aiSpeechSummary = async () => {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const bal = document.getElementById('summary-balance').innerText;
+            const text = `Tu resumen: Tienes un balance de ${bal}. ` + (bal.includes('-') ? "Cuidado, estás en déficit mensual." : "Buen trabajo, tienes saldo a favor.");
+            try {
+                const r = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } } })
+                });
+                const d = await r.json();
+                const bin = atob(d.candidates[0].content.parts[0].inlineData.data);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const blob = new Blob([createWavHeader(bytes, 24000)], { type: 'audio/wav' });
+                new Audio(URL.createObjectURL(blob)).play();
+            } catch (e) { console.error("Fallo Voz:", e); }
+        };
+
+        function createWavHeader(pcmData, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcmData.length);
+            const view = new DataView(buffer);
+            const writeString = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+            writeString(0, 'RIFF'); view.setUint32(4, 32 + pcmData.length, true);
+            writeString(8, 'WAVE'); writeString(12, 'fmt '); view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+            writeString(36, 'data'); view.setUint32(40, pcmData.length, true);
+            const pcmInt16 = new Int16Array(pcmData.buffer);
+            for (let i = 0; i < pcmInt16.length; i++) view.setInt16(44 + i * 2, pcmInt16[i], true);
+            return buffer;
+        }
+
+        window.resetData = () => { if(confirm("¿Reiniciar montos reales de este mes?")) { Object.keys(state.data).forEach(k => state.data[k].forEach(i => i.real = 0)); render(); saveData(); } };
+        window.manualSave = () => saveData();
+
+        initAuth();
+        render();
+    </script>
+</body>
+</html>
